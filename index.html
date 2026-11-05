@@ -1,0 +1,2053 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>LAB PECAHAN SENILAI - IFP Master Edition</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Orbitron & Rajdhani -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Rajdhani:wght@600;700;800&display=swap" rel="stylesheet">
+
+  <script>
+    // Global guard: Mencegah browser menampilkan notifikasi error ke layar IFP
+    window.addEventListener('error', function(e) {
+      if (e) {
+        e.stopImmediatePropagation();
+        e.preventDefault();
+      }
+      return false;
+    }, true);
+    window.addEventListener('unhandledrejection', function(e) {
+      if (e) {
+        e.stopImmediatePropagation();
+        e.preventDefault();
+      }
+      return false;
+    }, true);
+  </script>
+
+  <style>
+    :root {
+      --neon-cyan: #00f3ff;
+      --neon-amber: #ffaa00;
+      --neon-green: #10f49c;
+      --neon-rose: #ff3366;
+      --neon-violet: #bd00ff;
+      --bg-dark: #030712;
+    }
+
+    * {
+      user-select: none;
+      -webkit-user-select: none;
+      box-sizing: border-box;
+      touch-action: manipulation;
+    }
+
+    html, body {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      margin: 0;
+      padding: 0;
+      background: var(--bg-dark);
+      font-family: 'Rajdhani', sans-serif;
+      color: #e2f1ff;
+    }
+
+    .font-sci {
+      font-family: 'Orbitron', monospace;
+    }
+
+    .holo-panel {
+      background: rgba(6, 14, 30, 0.92);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(0, 243, 255, 0.28);
+      border-radius: 12px;
+      box-shadow: 0 0 20px rgba(0, 243, 255, 0.05);
+    }
+
+    .glow-cyan { text-shadow: 0 0 12px rgba(0, 243, 255, 0.85); }
+    .glow-amber { text-shadow: 0 0 12px rgba(255, 170, 0, 0.85); }
+    .glow-green { text-shadow: 0 0 12px rgba(16, 244, 156, 0.85); }
+    .glow-rose { text-shadow: 0 0 12px rgba(255, 51, 102, 0.85); }
+
+    .btn-holo {
+      background: rgba(0, 243, 255, 0.08);
+      border: 1px solid rgba(0, 243, 255, 0.35);
+      color: #e2f1ff;
+      transition: all 0.1s ease-out;
+    }
+    .btn-holo:hover, .btn-holo:active {
+      background: var(--neon-cyan);
+      color: #030712;
+      box-shadow: 0 0 18px rgba(0, 243, 255, 0.8);
+      transform: scale(0.97);
+    }
+    .btn-holo.active {
+      background: var(--neon-cyan);
+      color: #030712;
+      font-weight: 800;
+      border-color: #ffffff;
+      box-shadow: 0 0 20px rgba(0, 243, 255, 0.9);
+    }
+
+    .btn-amber {
+      background: rgba(255, 170, 0, 0.1);
+      border: 1px solid rgba(255, 170, 0, 0.45);
+      color: #ffaa00;
+      transition: all 0.1s ease-out;
+    }
+    .btn-amber:hover, .btn-amber:active {
+      background: var(--neon-amber);
+      color: #030712;
+      box-shadow: 0 0 18px rgba(255, 170, 0, 0.85);
+      transform: scale(0.97);
+    }
+    .btn-amber.active {
+      background: var(--neon-amber);
+      color: #030712;
+      font-weight: 800;
+      border-color: #ffffff;
+      box-shadow: 0 0 20px rgba(255, 170, 0, 0.95);
+    }
+
+    input[type=range] {
+      -webkit-appearance: none;
+      background: rgba(0, 243, 255, 0.15);
+      border-radius: 6px;
+      height: 8px;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: var(--neon-amber);
+      border: 2px solid #ffffff;
+      box-shadow: 0 0 12px var(--neon-amber);
+      cursor: pointer;
+    }
+
+    .scanlines {
+      background: linear-gradient(
+        to bottom,
+        rgba(255,255,255,0),
+        rgba(255,255,255,0) 50%,
+        rgba(0, 243, 255, 0.02) 50%,
+        rgba(0, 243, 255, 0.02)
+      );
+      background-size: 100% 4px;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body class="w-screen h-screen overflow-hidden flex flex-col p-2 gap-2 justify-between relative bg-[#030712]">
+
+  <!-- Latar Belakang Animasi Partikel & Grid Bintang -->
+  <canvas id="bgCanvas" class="fixed inset-0 w-full h-full pointer-events-none z-0"></canvas>
+  <div class="fixed inset-0 scanlines z-0"></div>
+
+  <!-- Kanvas Coretan Holo-Marker (z-index 40) -->
+  <canvas id="drawCanvas" class="fixed inset-0 w-full h-full pointer-events-none" style="z-index: 40;"></canvas>
+
+  <!-- Floating Toolbar Mode Coretan (z-index 999999) -->
+  <div id="floatingDrawToolbar" class="hidden fixed bottom-4 right-4 items-center gap-2 px-3 py-2 rounded-xl bg-violet-950/95 border-2 border-violet-400 shadow-[0_0_25px_rgba(189,0,255,0.8)]" style="z-index: 999999; pointer-events: auto !important;">
+    <span class="text-xs font-sci font-bold text-violet-200 mr-1 flex items-center gap-1.5">
+      <span class="w-2.5 h-2.5 rounded-full bg-violet-400 animate-pulse"></span> KUAS NEON
+    </span>
+    <button id="colorMagenta" class="w-8 h-8 rounded-full bg-[#bd00ff] border-2 border-white shadow-[0_0_10px_#bd00ff] active:scale-90 transition cursor-pointer" title="Magenta"></button>
+    <button id="colorCyan" class="w-8 h-8 rounded-full bg-[#00f3ff] border border-cyan-200 shadow-[0_0_8px_#00f3ff] active:scale-90 transition cursor-pointer" title="Cyan"></button>
+    <button id="colorYellow" class="w-8 h-8 rounded-full bg-[#ffff00] border border-yellow-200 shadow-[0_0_8px_#ffff00] active:scale-90 transition cursor-pointer" title="Kuning"></button>
+    <div class="h-6 w-[1px] bg-violet-500/50 mx-1"></div>
+    <button id="btnFloatingClear" class="px-3 h-8 rounded-lg bg-red-950/80 border border-red-500 text-red-300 font-sci text-xs font-bold active:scale-90 transition cursor-pointer flex items-center gap-1">
+      🗑️ HAPUS
+    </button>
+    <button id="btnFloatingClose" class="px-3.5 h-8 rounded-lg bg-violet-600 text-white font-sci text-xs font-black shadow-[0_0_15px_rgba(189,0,255,1)] border border-white active:scale-90 transition cursor-pointer flex items-center gap-1">
+      ✕ SELESAI
+    </button>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- HEADER ATAS (IFP MASTER BAR)               -->
+  <!-- ========================================== -->
+  <header class="relative w-full h-14 flex-shrink-0 holo-panel px-3 py-1 flex items-center justify-between gap-2 border-cyan-400/40" style="z-index: 999999; pointer-events: auto !important;">
+    <div class="flex items-center gap-2">
+      <div class="w-9 h-9 rounded-lg border border-cyan-400 bg-cyan-950/80 flex items-center justify-center shadow-[0_0_12px_#00f3ff]">
+        <span class="text-xl">⚛️</span>
+      </div>
+      <div>
+        <h1 class="text-sm md:text-base font-black font-sci text-cyan-300 glow-cyan leading-tight flex items-center gap-2 tracking-wider">
+          LAB PECAHAN SENILAI 
+          <span class="text-[10px] text-amber-400 px-2 py-0.5 rounded border border-amber-400/50 bg-amber-950/60 font-mono font-bold tracking-tight glow-amber">
+            CREATED BY : SI_MOMON
+          </span>
+        </h1>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs (3 MODE: LAB, MISI, DUEL 2P) -->
+    <div class="flex items-center gap-1.5">
+      <button id="tabLab" class="btn-holo active h-10 px-4 text-xs font-sci font-bold rounded-lg flex items-center gap-1.5">
+        <span>🔬</span> PROYEKTOR LAB
+      </button>
+      <button id="tabMission" class="btn-holo h-10 px-4 text-xs font-sci font-bold rounded-lg flex items-center gap-1.5">
+        <span>🛡️</span> MISI REAKTOR
+      </button>
+      <button id="tabDuel" class="btn-holo h-10 px-4 text-xs font-sci font-bold rounded-lg flex items-center gap-1.5 bg-gradient-to-r from-cyan-950 to-violet-950 border-violet-400/50">
+        <span>⚔️</span> DUEL 2P (VS)
+      </button>
+    </div>
+
+    <!-- Presets Pecahan Acuan -->
+    <div class="hidden xl:flex items-center gap-1 bg-black/40 px-2.5 py-1 rounded-lg border border-cyan-500/30">
+      <span class="text-[10px] font-sci text-cyan-400 font-bold mr-1">PRESET:</span>
+      <button class="btnPreset btn-holo active h-8 px-2 text-xs font-sci font-bold rounded" data-num="1" data-den="2">1/2</button>
+      <button class="btnPreset btn-holo h-8 px-2 text-xs font-sci font-bold rounded" data-num="2" data-den="3">2/3</button>
+      <button class="btnPreset btn-holo h-8 px-2 text-xs font-sci font-bold rounded" data-num="3" data-den="4">3/4</button>
+      <button class="btnPreset btn-holo h-8 px-2 text-xs font-sci font-bold rounded" data-num="2" data-den="5">2/5</button>
+      <button class="btnPreset btn-holo h-8 px-2 text-xs font-sci font-bold rounded" data-num="4" data-den="6">4/6</button>
+    </div>
+
+    <!-- Utilities Toolbar -->
+    <div class="flex items-center gap-1.5" style="pointer-events: auto !important;">
+      <button id="btnMarkerToggle" class="h-9 px-3 rounded-lg border border-violet-400/60 bg-violet-950/40 text-violet-300 text-xs font-sci flex items-center gap-1.5 cursor-pointer transition active:scale-95">
+        <span>✏️</span> <span id="markerStatusText">CORET: OFF</span>
+      </button>
+      <button id="btnAudioToggle" class="h-9 px-2.5 rounded-lg border border-cyan-500/40 bg-cyan-950/40 text-cyan-300 text-xs font-sci flex items-center cursor-pointer active:scale-95 transition">
+        <span id="audioIcon">🔊</span>
+      </button>
+      <button id="btnFullscreen" class="h-9 px-3 rounded-lg border border-amber-400/60 bg-amber-950/40 text-amber-300 text-xs font-sci flex items-center gap-1 cursor-pointer shadow-[0_0_10px_rgba(255,170,0,0.2)] active:scale-95 transition">
+        <span id="fsIcon">⛶</span> FULLSCREEN
+      </button>
+    </div>
+  </header>
+
+  <!-- ========================================== -->
+  <!-- MAIN WORKSPACE                             -->
+  <!-- ========================================== -->
+  <main class="relative z-10 w-full flex-1 min-h-0 flex overflow-hidden">
+
+    <!-- VIEW 1: PROYEKTOR LAB (ALUR UTAMA RESTORED) -->
+    <div id="panelLab" class="w-full h-full grid grid-cols-12 gap-2 min-h-0">
+      
+      <!-- KOLOM KONTROL KIRI -->
+      <section class="col-span-12 lg:col-span-4 xl:col-span-3 h-full holo-panel p-2.5 flex flex-col justify-between min-h-0 gap-1.5 border-cyan-500/30">
+        
+        <!-- KONTROL PECAHAN DASAR A (CUSTOM INPUT) -->
+        <div class="p-2 rounded-lg bg-black/40 border border-cyan-500/30 flex-shrink-0">
+          <div class="text-[11px] font-sci text-cyan-300 font-bold mb-1 flex justify-between items-center">
+            <span>PECAHAN DASAR A</span>
+            <span class="text-[10px] text-cyan-400/80 font-mono">EMITTER A</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div class="flex flex-col items-center bg-cyan-950/40 p-1 rounded border border-cyan-500/30">
+              <span class="text-[10px] text-cyan-400 font-mono font-bold">PEMBILANG (a)</span>
+              <div class="flex items-center w-full gap-1 mt-1">
+                <button id="btnDecNumA" class="w-9 h-9 rounded bg-cyan-900/60 text-cyan-300 font-bold border border-cyan-400/50 text-base flex items-center justify-center active:scale-90">－</button>
+                <input id="inputNumA" type="number" min="1" max="24" value="1" class="flex-1 h-9 bg-black/60 border border-cyan-400 rounded text-center font-sci text-base font-black text-cyan-300 focus:outline-none">
+                <button id="btnIncNumA" class="w-9 h-9 rounded bg-cyan-900/60 text-cyan-300 font-bold border border-cyan-400/50 text-base flex items-center justify-center active:scale-90">＋</button>
+              </div>
+            </div>
+            <div class="flex flex-col items-center bg-cyan-950/40 p-1 rounded border border-cyan-500/30">
+              <span class="text-[10px] text-cyan-400 font-mono font-bold">PENYEBUT (b)</span>
+              <div class="flex items-center w-full gap-1 mt-1">
+                <button id="btnDecDenA" class="w-9 h-9 rounded bg-cyan-900/60 text-cyan-300 font-bold border border-cyan-400/50 text-base flex items-center justify-center active:scale-90">－</button>
+                <input id="inputDenA" type="number" min="1" max="36" value="2" class="flex-1 h-9 bg-black/60 border border-cyan-400 rounded text-center font-sci text-base font-black text-cyan-300 focus:outline-none">
+                <button id="btnIncDenA" class="w-9 h-9 rounded bg-cyan-900/60 text-cyan-300 font-bold border border-cyan-400/50 text-base flex items-center justify-center active:scale-90">＋</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- OPERASI LASER (AMPLIFIKASI / REDUKSI) -->
+        <div class="p-2 rounded-lg bg-amber-950/20 border border-amber-500/30 flex-shrink-0">
+          <div class="grid grid-cols-2 gap-1.5 mb-2">
+            <button id="btnOpMultiply" class="btn-amber active h-8 text-xs font-sci font-bold rounded flex items-center justify-center gap-1">
+              ⚡ Amplifikasi (×)
+            </button>
+            <button id="btnOpDivide" class="btn-amber h-8 text-xs font-sci font-bold rounded flex items-center justify-center gap-1">
+              🧬 Reduksi (÷)
+            </button>
+          </div>
+
+          <div class="flex items-center justify-between text-xs font-sci font-bold text-amber-300 mb-1">
+            <span id="factorLabel">FAKTOR PENGALI (n)</span>
+            <span id="factorValueDisplay" class="text-sm font-black px-2 py-0.5 rounded bg-black/60 border border-amber-400 text-amber-400">× 2</span>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button id="btnDecFactor" class="w-8 h-8 rounded bg-amber-950/80 border border-amber-500 text-amber-300 font-bold text-sm flex items-center justify-center active:scale-90">－</button>
+            <input id="factorSlider" type="range" min="1" max="6" value="2" class="flex-1 cursor-pointer">
+            <button id="btnIncFactor" class="w-8 h-8 rounded bg-amber-950/80 border border-amber-500 text-amber-300 font-bold text-sm flex items-center justify-center active:scale-90">＋</button>
+          </div>
+        </div>
+
+        <!-- PILIHAN BENTUK VISUALISASI -->
+        <div class="grid grid-cols-3 gap-1 flex-shrink-0">
+          <button id="btnShapeRadial" class="btn-holo active h-9 text-[11px] font-sci rounded-lg flex items-center justify-center gap-1">
+            <span>🌀</span> Melingkar
+          </button>
+          <button id="btnShapeLinear" class="btn-holo h-9 text-[11px] font-sci rounded-lg flex items-center justify-center gap-1">
+            <span>🔋</span> Batang
+          </button>
+          <button id="btnShapeLine" class="btn-holo h-9 text-[11px] font-sci rounded-lg flex items-center justify-center gap-1">
+            <span>📏</span> Garis Bil.
+          </button>
+        </div>
+
+        <!-- TOMBOL OVERLAY & TIRAI TEBAK -->
+        <div class="grid grid-cols-2 gap-1.5 flex-shrink-0">
+          <button id="btnBlindMode" class="h-10 rounded-lg border border-violet-400/50 bg-violet-950/30 text-violet-300 font-sci text-xs font-bold active:scale-95 flex items-center justify-center gap-1">
+            <span>👁️</span> <span id="blindModeText">TIRAI TEBAK</span>
+          </button>
+          <button id="btnViewMode" class="btn-amber h-10 rounded-lg font-sci text-xs font-black tracking-wide flex items-center justify-center gap-1 active:scale-95">
+            <span>✨</span> <span id="viewModeText">TUMPUK (OVERLAY)</span>
+          </button>
+        </div>
+
+        <!-- STATUS SENILAI & PEMBUKTIAN MATEMATIKA -->
+        <div class="p-2.5 rounded-lg bg-black/60 border border-cyan-500/30 flex-1 flex flex-col justify-between min-h-[140px]">
+          <div class="flex items-center justify-center gap-1.5 text-xs font-sci font-bold text-green-300 glow-green py-0.5">
+            <span class="w-2.5 h-2.5 rounded-full bg-green-400 animate-pulse"></span>
+            <span id="statusEquivText">STATUS: PECAHAN SENILAI</span>
+          </div>
+
+          <!-- RUMUS PECAHAN BERTINGKAT BESAR & JELAS UNTUK IFP -->
+          <div id="mathEquationBlock" class="my-auto py-1 flex items-center justify-center gap-3 font-sci">
+            <!-- Sisi Kiri: Operasi Pembilang & Penyebut Bertingkat -->
+            <div class="inline-flex flex-col items-center justify-center text-center">
+              <!-- Baris Pembilang Atas -->
+              <div class="text-xl md:text-2xl font-black tracking-wide leading-none py-1">
+                <span id="eqNumA" class="text-cyan-300 glow-cyan">5</span>
+                <span id="eqOpTop" class="text-amber-400 glow-amber mx-1 font-bold">× 2</span>
+              </div>
+              <!-- Garis Pecahan -->
+              <div class="w-full h-[3px] bg-gradient-to-r from-cyan-400 via-white to-amber-400 rounded-full my-0.5 shadow-[0_0_8px_rgba(0,243,255,0.8)]"></div>
+              <!-- Baris Penyebut Bawah -->
+              <div class="text-xl md:text-2xl font-black tracking-wide leading-none py-1">
+                <span id="eqDenA" class="text-cyan-300 glow-cyan">7</span>
+                <span id="eqOpBottom" class="text-amber-400 glow-amber mx-1 font-bold">× 2</span>
+              </div>
+            </div>
+
+            <!-- Tanda Sama Dengan (=) -->
+            <div class="text-2xl md:text-3xl font-black text-white glow-green px-1">
+              ＝
+            </div>
+
+            <!-- Sisi Kanan: Hasil Pecahan Senilai Bertingkat -->
+            <div class="inline-flex flex-col items-center justify-center text-center min-w-[54px]">
+              <!-- Pembilang Hasil -->
+              <div id="eqNumRes" class="text-xl md:text-2xl font-black text-amber-400 glow-amber leading-none py-1">
+                10
+              </div>
+              <!-- Garis Pecahan -->
+              <div class="w-full h-[3px] bg-amber-400 rounded-full my-0.5 shadow-[0_0_10px_rgba(255,170,0,0.9)]"></div>
+              <!-- Penyebut Hasil -->
+              <div id="eqDenRes" class="text-xl md:text-2xl font-black text-amber-400 glow-amber leading-none py-1">
+                14
+              </div>
+            </div>
+          </div>
+
+          <div id="crossProductText" class="text-[11px] font-mono text-amber-300 bg-amber-950/40 px-2 py-0.5 rounded border border-amber-500/30 text-center">
+            Uji Kali Silang: 5×14 = 7×10 (70 = 70) ✓
+          </div>
+        </div>
+
+      </section>
+
+      <!-- PANGGUNG PROYEKSI HOLOGRAFIK KANAN -->
+      <section class="col-span-12 lg:col-span-8 xl:col-span-9 h-full holo-panel p-2.5 flex flex-col justify-between min-h-0 border-cyan-500/30">
+        
+        <!-- Header Status Bar -->
+        <div class="w-full h-8 flex items-center justify-between border-b border-cyan-500/30 pb-1 flex-shrink-0">
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-sci text-cyan-400 font-bold">STATUS PROYEKTOR:</span>
+            <span id="projModeBadge" class="text-[11px] font-sci px-2.5 py-0.5 rounded bg-cyan-950 border border-cyan-400 text-cyan-300 font-bold">
+              DUAL EMITTER BERSANDING
+            </span>
+          </div>
+          
+          <!-- Badge Persamaan Interaktif dengan Fitur Buka/Kunci Hasil -->
+          <div class="flex items-center gap-2">
+            <div id="topFracContainer" class="font-sci text-sm md:text-base text-cyan-300 font-black px-3 py-0.5 rounded bg-black/60 border border-cyan-500/50 flex items-center gap-2 cursor-pointer" title="Klik untuk membuka / menutup hasil">
+              <span id="topFracA" class="text-cyan-300">1/2</span>
+              <span id="topEquivSymbol" class="text-green-400 font-bold">＝</span>
+              <span id="topFracB" class="text-amber-400 glow-amber px-2 py-0.5 rounded bg-amber-950/60 border border-amber-400/60">? / ?</span>
+            </div>
+            <button id="btnLockToggle" class="h-7 px-2.5 text-[10px] font-sci font-bold rounded bg-amber-950/60 border border-amber-500 text-amber-300 hover:bg-amber-400 hover:text-black transition active:scale-90 flex items-center gap-1">
+              <span>🔒</span> <span id="btnLockText">KUNCI</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Wadah Kanvas Proyektor A & B -->
+        <div id="canvasStageContainer" class="w-full flex-1 min-h-0 flex items-center justify-center relative overflow-hidden py-1">
+          <div id="splitStage" class="w-full h-full grid grid-cols-2 gap-2.5 min-h-0">
+            
+            <!-- Proyektor A (Cyan) -->
+            <div class="h-full flex flex-col justify-between items-center p-2 rounded-xl bg-black/40 border border-cyan-500/30 min-h-0">
+              <div class="w-full flex items-center justify-between px-2 flex-shrink-0">
+                <span id="headerLabelA" class="text-[11px] font-sci text-cyan-400 font-bold flex items-center gap-1">
+                  <span class="w-2 h-2 rounded-full bg-cyan-400"></span> PROYEKTOR A (DASAR)
+                </span>
+                <span id="labelFracA" class="font-sci font-black text-cyan-300 text-sm md:text-base">1 / 2</span>
+              </div>
+              <div class="w-full flex-1 min-h-0 flex items-center justify-center overflow-hidden p-1">
+                <canvas id="canvasA" class="max-w-full max-h-full object-contain filter drop-shadow-[0_0_15px_rgba(0,243,255,0.4)]"></canvas>
+              </div>
+              <div id="subLabelA" class="text-[11px] font-mono text-cyan-300/80 font-bold flex-shrink-0">
+                1 dari 2 bagian aktif
+              </div>
+            </div>
+
+            <!-- Proyektor B (Amber / Hasil Modulasi dengan Fitur Ketuk Buka) -->
+            <div id="proyektorBWrapper" class="h-full flex flex-col justify-between items-center p-2 rounded-xl bg-black/40 border border-amber-500/30 min-h-0 relative overflow-hidden cursor-pointer" title="Ketuk di sini untuk membuka hasil pecahan">
+              <div class="w-full flex items-center justify-between px-2 flex-shrink-0 z-20">
+                <span id="headerLabelB" class="text-[11px] font-sci text-amber-400 font-bold flex items-center gap-1">
+                  <span class="w-2 h-2 rounded-full bg-amber-400"></span> PROYEKTOR B (HASIL)
+                </span>
+                <span id="labelFracB" class="font-sci font-black text-amber-400 text-sm md:text-base px-2 py-0.5 rounded bg-black/50 border border-amber-400/40">? / ?</span>
+              </div>
+              
+              <div class="w-full flex-1 min-h-0 flex items-center justify-center overflow-hidden p-1 relative">
+                <canvas id="canvasB" class="max-w-full max-h-full object-contain filter drop-shadow-[0_0_15px_rgba(255,170,0,0.4)]"></canvas>
+                
+                <!-- Overlay "SENTUH UNTUK BUKA HASIL" -->
+                <div id="revealOverlayB" class="absolute inset-0 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm z-30 transition-all duration-300">
+                  <div class="w-16 h-16 rounded-full border-2 border-dashed border-amber-400 flex items-center justify-center animate-spin mb-2">
+                    <span class="text-2xl animate-none">👆</span>
+                  </div>
+                  <span class="text-xs font-sci font-bold text-amber-300 glow-amber tracking-wider">SENTUH UNTUK BUKA HASIL</span>
+                  <span class="text-[10px] font-mono text-amber-200/70 mt-1">Tebak dulu berapa nilainya!</span>
+                </div>
+              </div>
+
+              <div id="subLabelB" class="text-[11px] font-mono text-amber-300/80 font-bold flex-shrink-0 z-20">
+                Ketuk proyektor untuk membuka
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Telemetri Bawah -->
+        <div class="w-full h-7 flex items-center justify-between border-t border-cyan-500/30 pt-1 text-[11px] font-mono text-cyan-300/80 flex-shrink-0">
+          <span>Nilai Desimal: <strong id="decimalValueText" class="text-cyan-300">0.500 (50.0%)</strong></span>
+          <span id="laserProofText" class="text-amber-300 font-bold">Amplifikasi: Pembilang & Penyebut × 2</span>
+          <span class="text-green-300">Presisi: 100% Cocok</span>
+        </div>
+
+      </section>
+
+    </div>
+
+    <!-- VIEW 2: MISI STABILISASI REAKTOR -->
+    <div id="panelMission" class="w-full h-full hidden grid-cols-12 gap-2 min-h-0">
+      <section class="col-span-12 lg:col-span-4 xl:col-span-3 h-full holo-panel p-3 flex flex-col justify-between min-h-0 border-cyan-500/30">
+        <div>
+          <div class="flex items-center justify-between border-b border-cyan-500/30 pb-2 mb-2">
+            <span class="text-xs font-sci text-cyan-300 font-bold">MISI STABILISASI</span>
+            <span id="missionBadge" class="text-xs font-sci px-2.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-400 font-black">LVL 1</span>
+          </div>
+          <div class="p-2.5 rounded-lg bg-black/50 border border-amber-500/30 mb-2 text-center">
+            <span class="text-[10px] font-sci text-amber-300 font-bold">TARGET DAYA REAKTOR</span>
+            <div id="missionTargetFrac" class="text-3xl font-sci font-black text-amber-400 glow-amber my-1">1 / 2</div>
+            <span id="missionTargetDesc" class="text-[11px] font-mono text-amber-200/80">1 dari 2 sel energi terisi</span>
+          </div>
+          <div class="p-2.5 rounded-lg bg-black/50 border border-cyan-500/30 text-center">
+            <span class="text-[10px] font-sci text-cyan-300 font-bold">STATUS SEL ANDA</span>
+            <div id="missionPlayerFrac" class="text-3xl font-sci font-black text-cyan-300 glow-cyan my-1">0 / 4</div>
+            <span class="text-[11px] font-mono text-cyan-200/80">Sentuh irisan untuk aktif/mati</span>
+          </div>
+        </div>
+
+        <div class="flex flex-col gap-2">
+          <div class="grid grid-cols-2 gap-1.5">
+            <button id="btnClearMission" class="h-9 rounded bg-red-950/40 border border-red-500/40 text-red-300 text-xs font-sci font-bold active:scale-95">Kosongkan</button>
+            <button id="btnFillMission" class="h-9 rounded bg-cyan-950/40 border border-cyan-500/40 text-cyan-300 text-xs font-sci font-bold active:scale-95">Isi Semua</button>
+          </div>
+          <button id="btnVerifyMission" class="btn-holo w-full h-12 rounded-xl font-sci text-sm font-black active:scale-95">
+            🚀 STABILKAN REAKTOR
+          </button>
+          <button id="btnSkipMission" class="w-full h-7 text-[11px] font-sci text-cyan-400/70 hover:text-cyan-200">
+            Lewati Level ⏭️
+          </button>
+        </div>
+      </section>
+
+      <section class="col-span-12 lg:col-span-8 xl:col-span-9 h-full holo-panel p-3 flex flex-col justify-between min-h-0 border-cyan-500/30">
+        <div class="w-full h-7 flex items-center justify-between border-b border-cyan-500/30 pb-1 flex-shrink-0">
+          <span class="text-xs font-sci text-cyan-300 font-bold">KETUK IRISAN REAKTOR PENSTABIL HINGGA SENILAI DENGAN TARGET</span>
+          <span id="missionFeedback" class="text-xs font-sci font-bold text-amber-300">Siap Dihubungkan</span>
+        </div>
+
+        <div class="w-full flex-1 grid grid-cols-2 gap-3 min-h-0 py-1">
+          <div class="h-full flex flex-col justify-between items-center p-2 rounded-xl bg-black/40 border border-amber-500/30 min-h-0">
+            <span class="text-[11px] font-sci text-amber-400 font-bold flex-shrink-0">⚡ REAKTOR TARGET</span>
+            <div class="w-full flex-1 min-h-0 flex items-center justify-center p-1">
+              <canvas id="missionTargetCanvas" class="max-w-full max-h-full object-contain filter drop-shadow-[0_0_15px_rgba(255,170,0,0.4)]"></canvas>
+            </div>
+            <span class="text-[11px] font-mono text-amber-300/80 font-bold flex-shrink-0">Terkunci</span>
+          </div>
+
+          <div class="h-full flex flex-col justify-between items-center p-2 rounded-xl bg-black/40 border border-cyan-500/30 min-h-0 cursor-pointer">
+            <span class="text-[11px] font-sci text-cyan-400 font-bold flex-shrink-0">🎛️ REAKTOR PENSTABIL (KETUK SINI)</span>
+            <div class="w-full flex-1 min-h-0 flex items-center justify-center p-1">
+              <canvas id="missionPlayerCanvas" class="max-w-full max-h-full object-contain filter drop-shadow-[0_0_20px_rgba(0,243,255,0.45)]"></canvas>
+            </div>
+            <span class="text-[11px] font-mono text-cyan-300 font-bold flex-shrink-0">Sentuh irisan</span>
+          </div>
+        </div>
+
+        <div class="w-full h-7 border-t border-cyan-500/30 pt-1 flex items-center justify-between text-xs font-mono text-cyan-300/80 flex-shrink-0">
+          <span>Petunjuk: Total area energi cahaya harus seimbang dengan target di kiri.</span>
+          <span class="text-green-300 font-bold font-sci">SENSOR SENTUH AKTIF</span>
+        </div>
+      </section>
+    </div>
+
+    <!-- VIEW 3: DUEL 2P (VS SPLIT-SCREEN UNTUK LAYAR IFP) -->
+    <div id="panelDuel" class="w-full h-full hidden grid-cols-12 gap-2 min-h-0">
+      
+      <!-- SISI KIRI: PEMAIN 1 (CYAN) -->
+      <section class="col-span-5 h-full holo-panel p-2.5 flex flex-col justify-between border-cyan-400/50 min-h-0">
+        <div class="flex items-center justify-between border-b border-cyan-500/30 pb-1 flex-shrink-0">
+          <div class="flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full bg-cyan-400 shadow-[0_0_10px_#00f3ff]"></span>
+            <span class="text-xs font-sci font-black text-cyan-300">PEMAIN 1 (CYAN)</span>
+          </div>
+          <div id="p1Score" class="text-xs font-sci font-black px-2.5 py-0.5 rounded bg-cyan-950 border border-cyan-400 text-cyan-300">SKOR: 0</div>
+        </div>
+
+        <div class="flex-1 flex flex-col items-center justify-center min-h-0 relative my-1">
+          <div class="text-lg font-sci font-black text-cyan-300 mb-1" id="p1FracDisplay">0 / 6</div>
+          <canvas id="duelP1Canvas" class="max-w-full max-h-full object-contain cursor-pointer filter drop-shadow-[0_0_15px_rgba(0,243,255,0.4)]"></canvas>
+        </div>
+
+        <div class="flex gap-2 flex-shrink-0">
+          <button id="btnP1Reset" class="w-1/3 h-10 rounded-lg bg-cyan-950/60 border border-cyan-500/50 text-cyan-300 font-sci text-xs font-bold active:scale-95">RESET</button>
+          <button id="btnP1Lock" class="flex-1 h-10 rounded-lg bg-cyan-600 text-black font-sci text-xs font-black shadow-[0_0_15px_rgba(0,243,255,0.6)] active:scale-95">⚡ KUNCI JAWABAN</button>
+        </div>
+      </section>
+
+      <!-- PUSAT STATUS DUEL & TARGET BERSAMA -->
+      <section class="col-span-2 h-full holo-panel p-2 flex flex-col justify-between items-center text-center border-amber-500/40 min-h-0">
+        <div class="w-full border-b border-amber-500/30 pb-1">
+          <span class="text-[10px] font-sci text-amber-300 font-black">TARGET MISI</span>
+        </div>
+
+        <div class="my-auto flex flex-col items-center">
+          <div class="w-10 h-10 rounded-full border border-amber-400 bg-amber-950/60 flex items-center justify-center text-lg shadow-[0_0_15px_rgba(255,170,0,0.6)] mb-2">⚔️</div>
+          <span class="text-[10px] font-sci text-amber-200">SAMAKAN NILAI DENGAN:</span>
+          <div id="duelTargetFrac" class="text-3xl font-sci font-black text-amber-400 glow-amber my-1">1 / 2</div>
+          <div id="duelStatusBanner" class="text-xs font-sci font-bold text-amber-300 mt-1 px-2 py-1 rounded bg-black/50 border border-amber-500/30">BERLOMBA!</div>
+        </div>
+
+        <button id="btnNewRoundDuel" class="w-full h-9 rounded-lg bg-amber-950/80 border border-amber-400 text-amber-300 font-sci text-[10px] font-bold active:scale-95 flex items-center justify-center gap-1">
+          🔄 SOAL BARU
+        </button>
+      </section>
+
+      <!-- SISI KANAN: PEMAIN 2 (MAGENTA / VIOLET) -->
+      <section class="col-span-5 h-full holo-panel p-2.5 flex flex-col justify-between border-violet-400/50 min-h-0">
+        <div class="flex items-center justify-between border-b border-violet-500/30 pb-1 flex-shrink-0">
+          <div id="p2Score" class="text-xs font-sci font-black px-2.5 py-0.5 rounded bg-violet-950 border border-violet-400 text-violet-300">SKOR: 0</div>
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-sci font-black text-violet-300">PEMAIN 2 (MAGENTA)</span>
+            <span class="w-3 h-3 rounded-full bg-violet-400 shadow-[0_0_10px_#bd00ff]"></span>
+          </div>
+        </div>
+
+        <div class="flex-1 flex flex-col items-center justify-center min-h-0 relative my-1">
+          <div class="text-lg font-sci font-black text-violet-300 mb-1" id="p2FracDisplay">0 / 8</div>
+          <canvas id="duelP2Canvas" class="max-w-full max-h-full object-contain cursor-pointer filter drop-shadow-[0_0_15px_rgba(189,0,255,0.4)]"></canvas>
+        </div>
+
+        <div class="flex gap-2 flex-shrink-0">
+          <button id="btnP2Lock" class="flex-1 h-10 rounded-lg bg-violet-600 text-white font-sci text-xs font-black shadow-[0_0_15px_rgba(189,0,255,0.6)] active:scale-95">⚡ KUNCI JAWABAN</button>
+          <button id="btnP2Reset" class="w-1/3 h-10 rounded-lg bg-violet-950/60 border border-violet-500/50 text-violet-300 font-sci text-xs font-bold active:scale-95">RESET</button>
+        </div>
+      </section>
+
+    </div>
+
+  </main>
+
+  <!-- ========================================== -->
+  <!-- JAVASCRIPT MASTER ZERO-ERROR ENGINE        -->
+  <!-- ========================================== -->
+  <script>
+    /* --------------------------------------------------
+       1. SAFE AUDIO SYNTHESIZER (WEB AUDIO API)
+       -------------------------------------------------- */
+    let audioCtx = null;
+    let isSoundMuted = false;
+
+    function getAudioContext() {
+      if (!audioCtx) {
+        try {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          if (AudioContextClass) audioCtx = new AudioContextClass();
+        } catch (e) {}
+      }
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume().catch(() => {});
+      }
+      return audioCtx;
+    }
+
+    function playTone(freq, type = 'sine', duration = 0.1, gainVal = 0.12) {
+      if (isSoundMuted) return;
+      try {
+        const ctx = getAudioContext();
+        if (!ctx) return;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, ctx.currentTime);
+        gain.gain.setValueAtTime(gainVal, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + duration);
+      } catch (err) {}
+    }
+
+    function soundSuccess() {
+      if (isSoundMuted) return;
+      [523.25, 659.25, 783.99, 1046.5].forEach((f, idx) => {
+        setTimeout(() => playTone(f, 'sine', 0.18, 0.15), idx * 60);
+      });
+    }
+
+    function soundError() {
+      if (isSoundMuted) return;
+      playTone(180, 'sawtooth', 0.2, 0.16);
+      setTimeout(() => playTone(140, 'sawtooth', 0.25, 0.16), 100);
+    }
+
+    const btnAudioToggle = document.getElementById('btnAudioToggle');
+    const audioIcon = document.getElementById('audioIcon');
+    if (btnAudioToggle) {
+      btnAudioToggle.addEventListener('click', () => {
+        isSoundMuted = !isSoundMuted;
+        if (audioIcon) audioIcon.textContent = isSoundMuted ? '🔇' : '🔊';
+        if (!isSoundMuted) playTone(440, 'sine', 0.08);
+      });
+    }
+
+    /* --------------------------------------------------
+       2. FULLSCREEN CONTROLLER
+       -------------------------------------------------- */
+    const btnFullscreen = document.getElementById('btnFullscreen');
+    const fsIcon = document.getElementById('fsIcon');
+    if (btnFullscreen) {
+      btnFullscreen.addEventListener('click', () => {
+        try {
+          if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch(() => {});
+            if (fsIcon) fsIcon.textContent = '⛶';
+          } else {
+            document.exitFullscreen().catch(() => {});
+            if (fsIcon) fsIcon.textContent = '⛶';
+          }
+        } catch (e) {}
+      });
+    }
+
+    /* --------------------------------------------------
+       3. BACKGROUND STAR & GRID CANVAS
+       -------------------------------------------------- */
+    const bgCanvas = document.getElementById('bgCanvas');
+    const bgCtx = bgCanvas ? bgCanvas.getContext('2d') : null;
+    let bgStars = [];
+
+    function initStars() {
+      if (!bgCanvas) return;
+      bgCanvas.width = window.innerWidth;
+      bgCanvas.height = window.innerHeight;
+      bgStars = [];
+      const count = Math.min(80, Math.floor((bgCanvas.width * bgCanvas.height) / 18000));
+      for (let i = 0; i < count; i++) {
+        bgStars.push({
+          x: Math.random() * bgCanvas.width,
+          y: Math.random() * bgCanvas.height,
+          radius: Math.random() * 1.5 + 0.5,
+          speed: Math.random() * 0.4 + 0.1,
+          alpha: Math.random() * 0.6 + 0.2
+        });
+      }
+    }
+
+    function renderBg() {
+      if (!bgCtx || !bgCanvas) return;
+      bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
+      bgStars.forEach(s => {
+        s.y -= s.speed;
+        if (s.y < 0) {
+          s.y = bgCanvas.height;
+          s.x = Math.random() * bgCanvas.width;
+        }
+        bgCtx.beginPath();
+        bgCtx.arc(s.x, s.y, s.radius, 0, Math.PI * 2);
+        bgCtx.fillStyle = `rgba(0, 243, 255, ${s.alpha})`;
+        bgCtx.fill();
+      });
+      requestAnimationFrame(renderBg);
+    }
+
+    /* --------------------------------------------------
+       4. HOLO-MARKER (CORET LAYAR IFP BEBAS MACET)
+       -------------------------------------------------- */
+    const drawCanvas = document.getElementById('drawCanvas');
+    const drawCtx = drawCanvas ? drawCanvas.getContext('2d') : null;
+    const btnMarkerToggle = document.getElementById('btnMarkerToggle');
+    const markerStatusText = document.getElementById('markerStatusText');
+    const floatingDrawToolbar = document.getElementById('floatingDrawToolbar');
+    const btnFloatingClear = document.getElementById('btnFloatingClear');
+    const btnFloatingClose = document.getElementById('btnFloatingClose');
+
+    let isDrawMode = false;
+    let isDrawing = false;
+    let currentColor = '#bd00ff';
+    let lastX = 0;
+    let lastY = 0;
+
+    function resizeDrawCanvas() {
+      if (!drawCanvas) return;
+      drawCanvas.width = window.innerWidth;
+      drawCanvas.height = window.innerHeight;
+    }
+
+    function setDrawingMode(active) {
+      isDrawMode = active;
+      if (drawCanvas) drawCanvas.style.pointerEvents = active ? 'auto' : 'none';
+      if (markerStatusText) markerStatusText.textContent = active ? 'CORET: AKTIF' : 'CORET: OFF';
+      if (btnMarkerToggle) {
+        btnMarkerToggle.classList.toggle('border-violet-400', active);
+        btnMarkerToggle.classList.toggle('bg-violet-600', active);
+        btnMarkerToggle.classList.toggle('text-white', active);
+      }
+      if (floatingDrawToolbar) {
+        if (active) {
+          floatingDrawToolbar.classList.remove('hidden');
+          floatingDrawToolbar.classList.add('flex');
+        } else {
+          floatingDrawToolbar.classList.add('hidden');
+          floatingDrawToolbar.classList.remove('flex');
+        }
+      }
+      playTone(active ? 600 : 350, 'sine', 0.08);
+    }
+
+    if (btnMarkerToggle) {
+      btnMarkerToggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        setDrawingMode(!isDrawMode);
+      });
+    }
+
+    if (btnFloatingClose) {
+      btnFloatingClose.addEventListener('click', (e) => {
+        e.stopPropagation();
+        setDrawingMode(false);
+      });
+    }
+
+    if (btnFloatingClear) {
+      btnFloatingClear.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (drawCtx && drawCanvas) {
+          drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+          playTone(300, 'triangle', 0.08);
+        }
+      });
+    }
+
+    const colorMagenta = document.getElementById('colorMagenta');
+    const colorCyan = document.getElementById('colorCyan');
+    const colorYellow = document.getElementById('colorYellow');
+    if (colorMagenta) colorMagenta.addEventListener('click', (e) => { e.stopPropagation(); currentColor = '#bd00ff'; });
+    if (colorCyan) colorCyan.addEventListener('click', (e) => { e.stopPropagation(); currentColor = '#00f3ff'; });
+    if (colorYellow) colorYellow.addEventListener('click', (e) => { e.stopPropagation(); currentColor = '#ffff00'; });
+
+    function getCoords(e) {
+      const clientX = e.clientX || (e.touches && e.touches[0] && e.touches[0].clientX) || 0;
+      const clientY = e.clientY || (e.touches && e.touches[0] && e.touches[0].clientY) || 0;
+      return { x: clientX, y: clientY };
+    }
+
+    function startDrawing(e) {
+      if (!isDrawMode || !drawCtx) return;
+      isDrawing = true;
+      const pos = getCoords(e);
+      lastX = pos.x;
+      lastY = pos.y;
+    }
+
+    function drawStroke(e) {
+      if (!isDrawing || !isDrawMode || !drawCtx) return;
+      const pos = getCoords(e);
+      drawCtx.strokeStyle = currentColor;
+      drawCtx.shadowColor = currentColor;
+      drawCtx.shadowBlur = 8;
+      drawCtx.lineWidth = 4;
+      drawCtx.lineCap = 'round';
+      drawCtx.lineJoin = 'round';
+      drawCtx.beginPath();
+      drawCtx.moveTo(lastX, lastY);
+      drawCtx.lineTo(pos.x, pos.y);
+      drawCtx.stroke();
+      lastX = pos.x;
+      lastY = pos.y;
+    }
+
+    function stopDrawing() { isDrawing = false; }
+
+    if (drawCanvas) {
+      drawCanvas.addEventListener('mousedown', startDrawing);
+      drawCanvas.addEventListener('mousemove', drawStroke);
+      window.addEventListener('mouseup', stopDrawing);
+
+      drawCanvas.addEventListener('touchstart', (e) => {
+        if (!isDrawMode) return;
+        e.preventDefault();
+        startDrawing(e);
+      }, { passive: false });
+
+      drawCanvas.addEventListener('touchmove', (e) => {
+        if (!isDrawMode) return;
+        e.preventDefault();
+        drawStroke(e);
+      }, { passive: false });
+
+      window.addEventListener('touchend', stopDrawing);
+    }
+
+    /* --------------------------------------------------
+       5. PROYEKTOR LAB STATE & CONTROLLER
+       -------------------------------------------------- */
+    const lab = {
+      numA: 1,
+      denA: 2,
+      operation: 'multiply', // 'multiply' | 'divide'
+      factor: 2,
+      shape: 'radial',
+      isOverlay: false,
+      isBlind: false,
+      isRevealed: false
+    };
+
+    const canvasA = document.getElementById('canvasA');
+    const ctxA = canvasA ? canvasA.getContext('2d') : null;
+    const canvasB = document.getElementById('canvasB');
+    const ctxB = canvasB ? canvasB.getContext('2d') : null;
+
+    const inputNumA = document.getElementById('inputNumA');
+    const inputDenA = document.getElementById('inputDenA');
+    const btnIncNumA = document.getElementById('btnIncNumA');
+    const btnDecNumA = document.getElementById('btnDecNumA');
+    const btnIncDenA = document.getElementById('btnIncDenA');
+    const btnDecDenA = document.getElementById('btnDecDenA');
+
+    const btnOpMultiply = document.getElementById('btnOpMultiply');
+    const btnOpDivide = document.getElementById('btnOpDivide');
+    const factorSlider = document.getElementById('factorSlider');
+    const btnIncFactor = document.getElementById('btnIncFactor');
+    const btnDecFactor = document.getElementById('btnDecFactor');
+    const factorLabel = document.getElementById('factorLabel');
+    const factorValueDisplay = document.getElementById('factorValueDisplay');
+
+    const btnShapeRadial = document.getElementById('btnShapeRadial');
+    const btnShapeLinear = document.getElementById('btnShapeLinear');
+    const btnShapeLine = document.getElementById('btnShapeLine');
+
+    const btnBlindMode = document.getElementById('btnBlindMode');
+    const blindModeText = document.getElementById('blindModeText');
+    const btnViewMode = document.getElementById('btnViewMode');
+    const viewModeText = document.getElementById('viewModeText');
+    const projModeBadge = document.getElementById('projModeBadge');
+
+    const labelFracA = document.getElementById('labelFracA');
+    const labelFracB = document.getElementById('labelFracB');
+    const subLabelA = document.getElementById('subLabelA');
+    const subLabelB = document.getElementById('subLabelB');
+    const topFracA = document.getElementById('topFracA');
+    const topFracB = document.getElementById('topFracB');
+    const topFracContainer = document.getElementById('topFracContainer');
+    const btnLockToggle = document.getElementById('btnLockToggle');
+    const btnLockText = document.getElementById('btnLockText');
+    const revealOverlayB = document.getElementById('revealOverlayB');
+    const proyektorBWrapper = document.getElementById('proyektorBWrapper');
+
+    // Elemen Rumus Pecahan Bertingkat Baru
+    const eqNumA = document.getElementById('eqNumA');
+    const eqOpTop = document.getElementById('eqOpTop');
+    const eqDenA = document.getElementById('eqDenA');
+    const eqOpBottom = document.getElementById('eqOpBottom');
+    const eqNumRes = document.getElementById('eqNumRes');
+    const eqDenRes = document.getElementById('eqDenRes');
+
+    const crossProductText = document.getElementById('crossProductText');
+    const decimalValueText = document.getElementById('decimalValueText');
+    const laserProofText = document.getElementById('laserProofText');
+
+    function calculateFractionB() {
+      const a = lab.numA;
+      const b = lab.denA;
+      const n = lab.factor;
+
+      if (lab.operation === 'multiply') {
+        return { numB: a * n, denB: b * n };
+      } else {
+        // Reduksi (Pembagian)
+        const commonDivisor = gcd(a, b);
+        let safeDivisor = n;
+        if (a % safeDivisor !== 0 || b % safeDivisor !== 0) safeDivisor = 1;
+        return { numB: Math.round(a / safeDivisor), denB: Math.round(b / safeDivisor), actualDivisor: safeDivisor };
+      }
+    }
+
+    function gcd(x, y) {
+      x = Math.abs(x);
+      y = Math.abs(y);
+      while (y) { const t = y; y = x % y; x = t; }
+      return x;
+    }
+
+    function updateFractionA() {
+      let n = parseInt(inputNumA.value) || 1;
+      let d = parseInt(inputDenA.value) || 2;
+      if (d < 1) d = 1;
+      if (d > 36) d = 36;
+      if (n < 1) n = 1;
+      if (n > d) n = d;
+
+      inputNumA.value = n;
+      inputDenA.value = d;
+      lab.numA = n;
+      lab.denA = d;
+
+      document.querySelectorAll('.btnPreset').forEach(b => {
+        b.classList.toggle('active', parseInt(b.dataset.num) === n && parseInt(b.dataset.den) === d);
+      });
+
+      // Kunci ulang agar siswa menebak hasil baru
+      relockProyektorB();
+      playTone(420, 'sine', 0.04);
+      renderLab();
+    }
+
+    if (inputNumA) inputNumA.addEventListener('input', updateFractionA);
+    if (inputDenA) inputDenA.addEventListener('input', updateFractionA);
+
+    if (btnIncNumA) btnIncNumA.addEventListener('click', () => { if (lab.numA < lab.denA) { inputNumA.value = lab.numA + 1; updateFractionA(); } });
+    if (btnDecNumA) btnDecNumA.addEventListener('click', () => { if (lab.numA > 1) { inputNumA.value = lab.numA - 1; updateFractionA(); } });
+    if (btnIncDenA) btnIncDenA.addEventListener('click', () => { if (lab.denA < 36) { inputDenA.value = lab.denA + 1; updateFractionA(); } });
+    if (btnDecDenA) btnDecDenA.addEventListener('click', () => { if (lab.denA > 1) { inputDenA.value = lab.denA - 1; updateFractionA(); } });
+
+    // Quick Presets
+    document.querySelectorAll('.btnPreset').forEach(b => {
+      b.addEventListener('click', () => {
+        if (inputNumA) inputNumA.value = parseInt(b.dataset.num);
+        if (inputDenA) inputDenA.value = parseInt(b.dataset.den);
+        updateFractionA();
+      });
+    });
+
+    // Operasi Laser Switch
+    if (btnOpMultiply) {
+      btnOpMultiply.addEventListener('click', () => {
+        lab.operation = 'multiply';
+        btnOpMultiply.classList.add('active');
+        btnOpDivide.classList.remove('active');
+        factorLabel.textContent = 'FAKTOR PENGALI (n)';
+        factorSlider.min = 1;
+        factorSlider.max = 6;
+        factorSlider.value = 2;
+        lab.factor = 2;
+        factorValueDisplay.textContent = '× 2';
+        relockProyektorB();
+        playTone(550, 'sine', 0.08);
+        renderLab();
+      });
+    }
+
+    if (btnOpDivide) {
+      btnOpDivide.addEventListener('click', () => {
+        lab.operation = 'divide';
+        btnOpDivide.classList.add('active');
+        btnOpMultiply.classList.remove('active');
+        factorLabel.textContent = 'FAKTOR PEMBAGI (n)';
+        const g = gcd(lab.numA, lab.denA);
+        factorSlider.min = 1;
+        factorSlider.max = Math.max(1, g);
+        factorSlider.value = Math.max(1, g);
+        lab.factor = Math.max(1, g);
+        factorValueDisplay.textContent = `÷ ${lab.factor}`;
+        relockProyektorB();
+        playTone(450, 'sine', 0.08);
+        renderLab();
+      });
+    }
+
+    function updateFactor(val) {
+      lab.factor = parseInt(val) || 1;
+      factorSlider.value = lab.factor;
+      factorValueDisplay.textContent = lab.operation === 'multiply' ? `× ${lab.factor}` : `÷ ${lab.factor}`;
+      relockProyektorB();
+      playTone(350 + lab.factor * 40, 'triangle', 0.06);
+      renderLab();
+    }
+
+    if (factorSlider) factorSlider.addEventListener('input', (e) => updateFactor(e.target.value));
+    if (btnIncFactor) btnIncFactor.addEventListener('click', () => { if (lab.factor < parseInt(factorSlider.max)) updateFactor(lab.factor + 1); });
+    if (btnDecFactor) btnDecFactor.addEventListener('click', () => { if (lab.factor > parseInt(factorSlider.min)) updateFactor(lab.factor - 1); });
+
+    function setVisualShape(shapeName) {
+      lab.shape = shapeName;
+      if (btnShapeRadial) btnShapeRadial.classList.toggle('active', shapeName === 'radial');
+      if (btnShapeLinear) btnShapeLinear.classList.toggle('active', shapeName === 'linear');
+      if (btnShapeLine) btnShapeLine.classList.toggle('active', shapeName === 'numberline');
+      playTone(520, 'sine', 0.08);
+      renderLab();
+    }
+
+    if (btnShapeRadial) btnShapeRadial.addEventListener('click', () => setVisualShape('radial'));
+    if (btnShapeLinear) btnShapeLinear.addEventListener('click', () => setVisualShape('linear'));
+    if (btnShapeLine) btnShapeLine.addEventListener('click', () => setVisualShape('numberline'));
+
+    // Mode Tumpuk (Overlay)
+    if (btnViewMode) {
+      btnViewMode.addEventListener('click', () => {
+        lab.isOverlay = !lab.isOverlay;
+        if (lab.isOverlay) {
+          btnViewMode.classList.add('active');
+          if (viewModeText) viewModeText.textContent = 'PISAHKAN BERSANDING';
+          if (projModeBadge) projModeBadge.textContent = 'MODE SUPERIMPOSE (TUMPUK A & B)';
+          revealProyektorB();
+          soundSuccess();
+        } else {
+          btnViewMode.classList.remove('active');
+          if (viewModeText) viewModeText.textContent = 'TUMPUK (OVERLAY)';
+          if (projModeBadge) projModeBadge.textContent = 'DUAL EMITTER BERSANDING';
+          playTone(420, 'sine', 0.08);
+        }
+        renderLab();
+      });
+    }
+
+    // Tirai Tebak (Blind Mode)
+    if (btnBlindMode) {
+      btnBlindMode.addEventListener('click', () => {
+        lab.isBlind = !lab.isBlind;
+        if (lab.isBlind) {
+          btnBlindMode.classList.add('bg-violet-600', 'text-white');
+          blindModeText.textContent = 'BUKA TIRAI';
+          relockProyektorB();
+          playTone(320, 'sawtooth', 0.1);
+        } else {
+          btnBlindMode.classList.remove('bg-violet-600', 'text-white');
+          blindModeText.textContent = 'TIRAI TEBAK';
+          revealProyektorB();
+          soundSuccess();
+        }
+        renderLab();
+      });
+    }
+
+    // KUNCI & BUKA HASIL PROYEKTOR B
+    function revealProyektorB() {
+      lab.isRevealed = true;
+      if (revealOverlayB) revealOverlayB.classList.add('hidden');
+      if (btnLockText) btnLockText.textContent = 'KUNCI';
+      soundSuccess();
+      renderLab();
+    }
+
+    function relockProyektorB() {
+      lab.isRevealed = false;
+      if (revealOverlayB) revealOverlayB.classList.remove('hidden');
+      if (btnLockText) btnLockText.textContent = 'BUKA';
+      renderLab();
+    }
+
+    if (proyektorBWrapper) proyektorBWrapper.addEventListener('click', () => { if (!lab.isRevealed) revealProyektorB(); });
+    if (topFracContainer) topFracContainer.addEventListener('click', () => { if (!lab.isRevealed) revealProyektorB(); else relockProyektorB(); });
+    if (btnLockToggle) {
+      btnLockToggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (lab.isRevealed) relockProyektorB(); else revealProyektorB();
+      });
+    }
+
+    /* --------------------------------------------------
+       6. ROBUST HOLO SHAPE CANVAS RENDERER
+       -------------------------------------------------- */
+    function drawHoloShape(ctx, w, h, num, den, theme = 'cyan', shape = 'radial') {
+      if (!ctx || !w || !h || w <= 0 || h <= 0) return;
+      ctx.clearRect(0, 0, w, h);
+
+      const safeNum = Math.max(1, parseInt(num) || 1);
+      const safeDen = Math.max(1, parseInt(den) || 1);
+      const cx = w / 2;
+      const cy = h / 2;
+
+      const isCyan = theme === 'cyan';
+      const isMagenta = theme === 'magenta';
+      const mainColor = isCyan ? '#00f3ff' : (isMagenta ? '#bd00ff' : '#ffaa00');
+      const glowColor = isCyan ? 'rgba(0, 243, 255, 0.85)' : (isMagenta ? 'rgba(189, 0, 255, 0.85)' : 'rgba(255, 170, 0, 0.85)');
+      const deepColor = isCyan ? '#003a5c' : (isMagenta ? '#4a0066' : '#5c3300');
+
+      if (shape === 'radial') {
+        const radius = Math.max(15, Math.min(cx, cy) * 0.86);
+
+        ctx.strokeStyle = isCyan ? 'rgba(0, 243, 255, 0.25)' : (isMagenta ? 'rgba(189, 0, 255, 0.25)' : 'rgba(255, 170, 0, 0.25)');
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+        ctx.stroke();
+
+        const sliceAngle = (Math.PI * 2) / safeDen;
+        const startOffset = -Math.PI / 2;
+
+        for (let i = 0; i < safeDen; i++) {
+          const sStart = startOffset + i * sliceAngle;
+          const sEnd = sStart + sliceAngle;
+          const isActive = i < safeNum;
+
+          ctx.beginPath();
+          ctx.moveTo(cx, cy);
+          ctx.arc(cx, cy, radius, sStart, sEnd);
+          ctx.closePath();
+
+          if (isActive) {
+            const grad = ctx.createRadialGradient(cx, cy, Math.max(1, radius * 0.1), cx, cy, radius);
+            grad.addColorStop(0, '#ffffff');
+            grad.addColorStop(0.35, mainColor);
+            grad.addColorStop(1, deepColor);
+            ctx.fillStyle = grad;
+            ctx.shadowColor = glowColor;
+            ctx.shadowBlur = Math.max(6, w * 0.035);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+          } else {
+            ctx.fillStyle = isCyan ? 'rgba(4, 18, 38, 0.5)' : (isMagenta ? 'rgba(25, 4, 38, 0.5)' : 'rgba(30, 18, 4, 0.5)');
+            ctx.fill();
+          }
+
+          ctx.strokeStyle = isActive ? '#ffffff' : (isCyan ? 'rgba(0, 243, 255, 0.35)' : 'rgba(255, 170, 0, 0.35)');
+          ctx.lineWidth = Math.max(1.5, w * 0.007);
+          ctx.stroke();
+        }
+
+        const coreR = Math.max(12, radius * 0.2);
+        ctx.beginPath();
+        ctx.arc(cx, cy, coreR, 0, Math.PI * 2);
+        ctx.fillStyle = mainColor;
+        ctx.shadowColor = glowColor;
+        ctx.shadowBlur = 10;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+
+        ctx.fillStyle = '#030712';
+        ctx.font = `bold ${Math.max(9, Math.round(coreR * 0.75))}px Orbitron`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(`${safeNum}/${safeDen}`, cx, cy);
+
+      } else if (shape === 'linear') {
+        const barW = Math.max(20, w * 0.92);
+        const barH = Math.max(20, Math.min(65, h * 0.38));
+        const startX = (w - barW) / 2;
+        const startY = cy - barH / 2;
+        const cellW = barW / safeDen;
+
+        ctx.fillStyle = 'rgba(6, 14, 30, 0.7)';
+        ctx.strokeStyle = isCyan ? 'rgba(0, 243, 255, 0.4)' : 'rgba(255, 170, 0, 0.4)';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(startX, startY, barW, barH);
+        ctx.fillRect(startX, startY, barW, barH);
+
+        for (let i = 0; i < safeDen; i++) {
+          const x = startX + i * cellW;
+          const isActive = i < safeNum;
+
+          if (isActive) {
+            const barGrad = ctx.createLinearGradient(x, startY, x, startY + barH);
+            barGrad.addColorStop(0, '#ffffff');
+            barGrad.addColorStop(0.35, mainColor);
+            barGrad.addColorStop(1, deepColor);
+
+            ctx.fillStyle = barGrad;
+            ctx.shadowColor = glowColor;
+            ctx.shadowBlur = 10;
+            ctx.fillRect(x + 1, startY + 1, Math.max(0, cellW - 2), Math.max(0, barH - 2));
+            ctx.shadowBlur = 0;
+          }
+
+          ctx.strokeStyle = isActive ? '#ffffff' : (isCyan ? 'rgba(0, 243, 255, 0.35)' : 'rgba(255, 170, 0, 0.35)');
+          ctx.lineWidth = Math.max(1.5, w * 0.005);
+          ctx.strokeRect(x, startY, cellW, barH);
+        }
+
+        ctx.fillStyle = mainColor;
+        ctx.font = `bold ${Math.max(11, Math.round(w * 0.04))}px Orbitron`;
+        ctx.textAlign = 'center';
+        ctx.fillText(`${safeNum} / ${safeDen} Bagian`, cx, startY + barH + 20);
+
+      } else if (shape === 'numberline') {
+        const lineW = Math.max(20, w * 0.86);
+        const startX = (w - lineW) / 2;
+        const lineY = cy;
+
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(startX, lineY);
+        ctx.lineTo(startX + lineW, lineY);
+        ctx.stroke();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 12px Orbitron';
+        ctx.textAlign = 'center';
+        ctx.fillText('0', startX, lineY + 22);
+        ctx.fillText('1', startX + lineW, lineY + 22);
+
+        for (let i = 0; i <= safeDen; i++) {
+          const tx = startX + (i / safeDen) * lineW;
+          ctx.strokeStyle = i === safeNum ? mainColor : (isCyan ? 'rgba(0, 243, 255, 0.4)' : 'rgba(255, 170, 0, 0.4)');
+          ctx.lineWidth = i === safeNum ? 3 : 1.5;
+          ctx.beginPath();
+          ctx.moveTo(tx, lineY - 8);
+          ctx.lineTo(tx, lineY + 8);
+          ctx.stroke();
+        }
+
+        const targetX = startX + (safeNum / safeDen) * lineW;
+        ctx.strokeStyle = mainColor;
+        ctx.shadowColor = glowColor;
+        ctx.shadowBlur = 12;
+        ctx.lineWidth = 6;
+        ctx.beginPath();
+        ctx.moveTo(startX, lineY);
+        ctx.lineTo(targetX, lineY);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        ctx.beginPath();
+        ctx.arc(targetX, lineY, 8, 0, Math.PI * 2);
+        ctx.fillStyle = mainColor;
+        ctx.shadowColor = '#ffffff';
+        ctx.shadowBlur = 15;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = `bold ${Math.max(11, Math.round(w * 0.04))}px Orbitron`;
+        ctx.fillText(`${safeNum}/${safeDen}`, targetX, lineY - 18);
+      }
+    }
+
+    function drawSuperimpose(ctx, w, h, numA, denA, numB, denB, shape = 'radial') {
+      if (!ctx || !w || !h || w <= 0 || h <= 0) return;
+      ctx.clearRect(0, 0, w, h);
+
+      const cx = w / 2;
+      const cy = h / 2;
+      const safeNA = Math.max(1, numA);
+      const safeDA = Math.max(1, denA);
+      const safeNB = Math.max(1, numB);
+      const safeDB = Math.max(1, denB);
+
+      if (shape === 'radial') {
+        const radius = Math.max(15, Math.min(cx, cy) * 0.86);
+        const startOffset = -Math.PI / 2;
+
+        // Layer B (Amber)
+        const sliceAngleB = (Math.PI * 2) / safeDB;
+        for (let i = 0; i < safeDB; i++) {
+          const sStart = startOffset + i * sliceAngleB;
+          const sEnd = sStart + sliceAngleB;
+          const isActive = i < safeNB;
+
+          ctx.beginPath();
+          ctx.moveTo(cx, cy);
+          ctx.arc(cx, cy, radius, sStart, sEnd);
+          ctx.closePath();
+          ctx.fillStyle = isActive ? 'rgba(255, 170, 0, 0.65)' : 'rgba(25, 16, 5, 0.45)';
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(255, 170, 0, 0.4)';
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+        }
+
+        // Layer A (Cyan Overlay)
+        const sliceAngleA = (Math.PI * 2) / safeDA;
+        for (let i = 0; i < safeDA; i++) {
+          const sStart = startOffset + i * sliceAngleA;
+          const sEnd = sStart + sliceAngleA;
+          const isActive = i < safeNA;
+
+          ctx.beginPath();
+          ctx.moveTo(cx, cy);
+          ctx.arc(cx, cy, radius, sStart, sEnd);
+          ctx.closePath();
+
+          if (isActive) {
+            ctx.fillStyle = 'rgba(0, 243, 255, 0.45)';
+            ctx.shadowColor = '#00f3ff';
+            ctx.shadowBlur = 10;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+          }
+
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = Math.max(2, w * 0.008);
+          ctx.stroke();
+        }
+
+        const coreR = Math.max(14, radius * 0.2);
+        ctx.beginPath();
+        ctx.arc(cx, cy, coreR, 0, Math.PI * 2);
+        ctx.fillStyle = '#030712';
+        ctx.strokeStyle = '#10f49c';
+        ctx.lineWidth = 2.5;
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = '#10f49c';
+        ctx.font = `bold ${Math.max(9, Math.round(coreR * 0.65))}px Orbitron`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('100%', cx, cy);
+
+      } else if (shape === 'linear') {
+        const barW = Math.max(20, w * 0.92);
+        const barH = Math.max(20, Math.min(65, h * 0.38));
+        const startX = (w - barW) / 2;
+        const startY = cy - barH / 2;
+
+        ctx.fillStyle = 'rgba(5, 10, 25, 0.8)';
+        ctx.fillRect(startX, startY, barW, barH);
+        ctx.strokeRect(startX, startY, barW, barH);
+
+        const cellWB = barW / safeDB;
+        for (let i = 0; i < safeDB; i++) {
+          const x = startX + i * cellWB;
+          if (i < safeNB) {
+            ctx.fillStyle = 'rgba(255, 170, 0, 0.6)';
+            ctx.fillRect(x, startY, cellWB, barH);
+          }
+          ctx.strokeStyle = 'rgba(255, 170, 0, 0.4)';
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(x, startY, cellWB, barH);
+        }
+
+        const cellWA = barW / safeDA;
+        for (let i = 0; i < safeDA; i++) {
+          const x = startX + i * cellWA;
+          if (i < safeNA) {
+            ctx.fillStyle = 'rgba(0, 243, 255, 0.45)';
+            ctx.fillRect(x, startY, cellWA, barH);
+          }
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 2.5;
+          ctx.strokeRect(x, startY, cellWA, barH);
+        }
+
+        ctx.fillStyle = '#10f49c';
+        ctx.font = `bold ${Math.max(11, Math.round(w * 0.038))}px Orbitron`;
+        ctx.textAlign = 'center';
+        ctx.fillText(`LUAS SAMA PERSIS (${safeNA}/${safeDA} = ${safeNB}/${safeDB})`, cx, startY + barH + 20);
+
+      } else {
+        const lineW = Math.max(20, w * 0.86);
+        const startX = (w - lineW) / 2;
+        const lineY = cy;
+
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(startX, lineY);
+        ctx.lineTo(startX + lineW, lineY);
+        ctx.stroke();
+
+        const targetX = startX + (safeNA / safeDA) * lineW;
+
+        ctx.strokeStyle = '#00f3ff';
+        ctx.lineWidth = 6;
+        ctx.beginPath();
+        ctx.moveTo(startX, lineY);
+        ctx.lineTo(targetX, lineY);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(targetX, lineY, 8, 0, Math.PI * 2);
+        ctx.fillStyle = '#10f49c';
+        ctx.fill();
+
+        ctx.fillStyle = '#10f49c';
+        ctx.font = 'bold 11px Orbitron';
+        ctx.textAlign = 'center';
+        ctx.fillText(`TITIK SAMA PERSIS: ${safeNA}/${safeDA} = ${safeNB}/${safeDB}`, cx, lineY - 20);
+      }
+    }
+
+    function drawBeaconSync(ctx, w, h, num, den) {
+      if (!ctx || !w || !h || w <= 0 || h <= 0) return;
+      ctx.clearRect(0, 0, w, h);
+      const cx = w / 2;
+      const cy = h / 2;
+      const r = Math.max(15, Math.min(cx, cy) * 0.8);
+
+      for (let i = 1; i <= 3; i++) {
+        ctx.beginPath();
+        ctx.arc(cx, cy, (r / 3) * i, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(16, 244, 156, ${0.15 * i})`;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([6, 6]);
+      ctx.beginPath();
+      ctx.moveTo(cx - r, cy);
+      ctx.lineTo(cx + r, cy);
+      ctx.moveTo(cx, cy - r);
+      ctx.lineTo(cx, cy + r);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.beginPath();
+      ctx.arc(cx, cy, 16, 0, Math.PI * 2);
+      ctx.fillStyle = '#10f49c';
+      ctx.shadowColor = '#10f49c';
+      ctx.shadowBlur = 16;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      ctx.fillStyle = '#050814';
+      ctx.font = 'bold 8px Orbitron';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('SYNC', cx, cy);
+
+      ctx.fillStyle = '#10f49c';
+      ctx.font = 'bold 12px Orbitron';
+      ctx.fillText(`${num}/${den} (SENILAI 100%)`, cx, cy + r * 0.7);
+    }
+
+    function renderLab() {
+      try {
+        const { numA, denA, shape, isOverlay, isRevealed, operation, factor } = lab;
+        const bResult = calculateFractionB();
+        const numB = bResult.numB;
+        const denB = bResult.denB;
+
+        const val = numA / denA;
+
+        if (labelFracA) labelFracA.textContent = `${numA} / ${denA}`;
+        if (topFracA) topFracA.textContent = `${numA}/${denA}`;
+
+        if (isRevealed) {
+          if (labelFracB) labelFracB.textContent = `${numB} / ${denB}`;
+          if (topFracB) topFracB.textContent = `${numB}/${denB}`;
+          if (subLabelB) subLabelB.textContent = `${numB} dari ${denB} bagian aktif (${operation === 'multiply' ? '×' + factor : '÷' + factor})`;
+        } else {
+          if (labelFracB) labelFracB.textContent = `? / ?`;
+          if (topFracB) topFracB.textContent = `? / ?`;
+          if (subLabelB) subLabelB.textContent = `Ketuk proyektor untuk membuka`;
+        }
+
+        if (subLabelA) subLabelA.textContent = `${numA} dari ${denA} bagian aktif`;
+
+        // Telemetri Rumus Matematika Model Bertingkat Besar
+        const symbol = operation === 'multiply' ? '×' : '÷';
+        if (eqNumA) eqNumA.textContent = numA;
+        if (eqDenA) eqDenA.textContent = denA;
+        if (eqOpTop) eqOpTop.textContent = `${symbol} ${factor}`;
+        if (eqOpBottom) eqOpBottom.textContent = `${symbol} ${factor}`;
+
+        if (isRevealed) {
+          if (eqNumRes) {
+            eqNumRes.textContent = numB;
+            eqNumRes.className = 'text-xl md:text-2xl font-black text-amber-400 glow-amber leading-none py-1';
+          }
+          if (eqDenRes) {
+            eqDenRes.textContent = denB;
+            eqDenRes.className = 'text-xl md:text-2xl font-black text-amber-400 glow-amber leading-none py-1';
+          }
+        } else {
+          if (eqNumRes) {
+            eqNumRes.textContent = '?';
+            eqNumRes.className = 'text-xl md:text-2xl font-black text-amber-400 animate-pulse leading-none py-1';
+          }
+          if (eqDenRes) {
+            eqDenRes.textContent = '?';
+            eqDenRes.className = 'text-xl md:text-2xl font-black text-amber-400 animate-pulse leading-none py-1';
+          }
+        }
+
+        if (operation === 'multiply') {
+          if (laserProofText) laserProofText.textContent = `Amplifikasi: Pembilang & Penyebut × ${factor}`;
+        } else {
+          if (laserProofText) laserProofText.textContent = `Reduksi: Pembilang & Penyebut ÷ ${factor}`;
+        }
+
+        const crossA = numA * denB;
+        const crossB = denA * numB;
+        if (crossProductText) crossProductText.textContent = `Uji Kali Silang: ${numA}×${denB} = ${denA}×${numB} (${crossA} = ${crossB}) ✓`;
+        if (decimalValueText) decimalValueText.textContent = `${val.toFixed(3)} (${(val * 100).toFixed(1)}%)`;
+
+        if (!isOverlay) {
+          if (ctxA && canvasA) drawHoloShape(ctxA, canvasA.width, canvasA.height, numA, denA, 'cyan', shape);
+          if (ctxB && canvasB) drawHoloShape(ctxB, canvasB.width, canvasB.height, numB, denB, 'amber', shape);
+        } else {
+          if (ctxA && canvasA) drawSuperimpose(ctxA, canvasA.width, canvasA.height, numA, denA, numB, denB, shape);
+          if (ctxB && canvasB) drawBeaconSync(ctxB, canvasB.width, canvasB.height, numB, denB);
+        }
+      } catch (err) {}
+    }
+
+    /* --------------------------------------------------
+       7. MISI STABILISASI REAKTOR (SOLO CHALLENGE)
+       -------------------------------------------------- */
+    const mission = {
+      level: 1,
+      targetNum: 1,
+      targetDen: 2,
+      playerDen: 4,
+      playerSlices: new Set()
+    };
+
+    const missionTargetCanvas = document.getElementById('missionTargetCanvas');
+    const ctxMissionTarget = missionTargetCanvas ? missionTargetCanvas.getContext('2d') : null;
+    const missionPlayerCanvas = document.getElementById('missionPlayerCanvas');
+    const ctxMissionPlayer = missionPlayerCanvas ? missionPlayerCanvas.getContext('2d') : null;
+
+    const missionBadge = document.getElementById('missionBadge');
+    const missionTargetFrac = document.getElementById('missionTargetFrac');
+    const missionTargetDesc = document.getElementById('missionTargetDesc');
+    const missionPlayerFrac = document.getElementById('missionPlayerFrac');
+    const missionFeedback = document.getElementById('missionFeedback');
+
+    const missionPool = [
+      { tNum: 1, tDen: 2, pDen: 4 },
+      { tNum: 2, tDen: 3, pDen: 6 },
+      { tNum: 3, tDen: 4, pDen: 8 },
+      { tNum: 1, tDen: 3, pDen: 9 },
+      { tNum: 2, tDen: 5, pDen: 10 },
+      { tNum: 3, tDen: 4, pDen: 12 },
+      { tNum: 4, tDen: 5, pDen: 15 }
+    ];
+
+    function startMission(lvl = 1) {
+      mission.level = lvl;
+      if (missionBadge) missionBadge.textContent = `LVL ${lvl}`;
+      const data = missionPool[(lvl - 1) % missionPool.length];
+      mission.targetNum = data.tNum;
+      mission.targetDen = data.tDen;
+      mission.playerDen = data.pDen;
+      mission.playerSlices.clear();
+
+      if (missionTargetFrac) missionTargetFrac.textContent = `${data.tNum} / ${data.tDen}`;
+      if (missionTargetDesc) missionTargetDesc.textContent = `${data.tNum} dari ${data.tDen} sel terisi`;
+      if (missionFeedback) {
+        missionFeedback.textContent = 'Siap Dihubungkan';
+        missionFeedback.className = 'text-xs font-sci font-bold text-amber-300';
+      }
+
+      updatePlayerMissionUI();
+      drawMissionTarget();
+      drawMissionPlayer();
+    }
+
+    function updatePlayerMissionUI() {
+      if (missionPlayerFrac) missionPlayerFrac.textContent = `${mission.playerSlices.size} / ${mission.playerDen}`;
+    }
+
+    function drawMissionTarget() {
+      if (ctxMissionTarget && missionTargetCanvas) {
+        drawHoloShape(ctxMissionTarget, missionTargetCanvas.width, missionTargetCanvas.height, mission.targetNum, mission.targetDen, 'amber', 'radial');
+      }
+    }
+
+    function drawMissionPlayer() {
+      if (!ctxMissionPlayer || !missionPlayerCanvas) return;
+      const w = missionPlayerCanvas.width;
+      const h = missionPlayerCanvas.height;
+      if (w <= 0 || h <= 0) return;
+
+      const cx = w / 2;
+      const cy = h / 2;
+      const radius = Math.max(15, Math.min(cx, cy) * 0.86);
+
+      ctxMissionPlayer.clearRect(0, 0, w, h);
+      const sliceAngle = (Math.PI * 2) / mission.playerDen;
+      const startOffset = -Math.PI / 2;
+
+      for (let i = 0; i < mission.playerDen; i++) {
+        const sStart = startOffset + i * sliceAngle;
+        const sEnd = sStart + sliceAngle;
+        const isActive = mission.playerSlices.has(i);
+
+        ctxMissionPlayer.beginPath();
+        ctxMissionPlayer.moveTo(cx, cy);
+        ctxMissionPlayer.arc(cx, cy, radius, sStart, sEnd);
+        ctxMissionPlayer.closePath();
+
+        if (isActive) {
+          const grad = ctxMissionPlayer.createRadialGradient(cx, cy, Math.max(1, radius * 0.1), cx, cy, radius);
+          grad.addColorStop(0, '#ffffff');
+          grad.addColorStop(0.35, '#00f3ff');
+          grad.addColorStop(1, '#005580');
+          ctxMissionPlayer.fillStyle = grad;
+          ctxMissionPlayer.shadowColor = '#00f3ff';
+          ctxMissionPlayer.shadowBlur = 12;
+          ctxMissionPlayer.fill();
+          ctxMissionPlayer.shadowBlur = 0;
+        } else {
+          ctxMissionPlayer.fillStyle = 'rgba(4, 18, 38, 0.5)';
+          ctxMissionPlayer.fill();
+        }
+
+        ctxMissionPlayer.strokeStyle = isActive ? '#ffffff' : 'rgba(0, 243, 255, 0.35)';
+        ctxMissionPlayer.lineWidth = 2;
+        ctxMissionPlayer.stroke();
+      }
+
+      ctxMissionPlayer.beginPath();
+      ctxMissionPlayer.arc(cx, cy, Math.max(12, radius * 0.18), 0, Math.PI * 2);
+      ctxMissionPlayer.fillStyle = '#00f3ff';
+      ctxMissionPlayer.fill();
+    }
+
+    function handlePlayerSliceTouch(e) {
+      if (!missionPlayerCanvas) return;
+      const rect = missionPlayerCanvas.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+
+      const scaleX = missionPlayerCanvas.width / rect.width;
+      const scaleY = missionPlayerCanvas.height / rect.height;
+
+      const clientX = e.clientX || (e.touches && e.touches[0].clientX) || 0;
+      const clientY = e.clientY || (e.touches && e.touches[0].clientY) || 0;
+
+      const x = (clientX - rect.left) * scaleX;
+      const y = (clientY - rect.top) * scaleY;
+      const cx = missionPlayerCanvas.width / 2;
+      const cy = missionPlayerCanvas.height / 2;
+
+      const dx = x - cx;
+      const dy = y - cy;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      if (dist < 10 || dist > missionPlayerCanvas.width * 0.48) return;
+
+      let angle = Math.atan2(dy, dx) + Math.PI / 2;
+      if (angle < 0) angle += Math.PI * 2;
+
+      const sliceAngle = (Math.PI * 2) / mission.playerDen;
+      const sliceIdx = Math.floor(angle / sliceAngle);
+
+      if (mission.playerSlices.has(sliceIdx)) {
+        mission.playerSlices.delete(sliceIdx);
+        playTone(300, 'sine', 0.06);
+      } else {
+        mission.playerSlices.add(sliceIdx);
+        playTone(600, 'triangle', 0.08);
+      }
+
+      updatePlayerMissionUI();
+      drawMissionPlayer();
+    }
+
+    if (missionPlayerCanvas) {
+      missionPlayerCanvas.addEventListener('click', handlePlayerSliceTouch);
+      missionPlayerCanvas.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        handlePlayerSliceTouch(e);
+      }, { passive: false });
+    }
+
+    const btnClearMission = document.getElementById('btnClearMission');
+    const btnFillMission = document.getElementById('btnFillMission');
+    const btnVerifyMission = document.getElementById('btnVerifyMission');
+    const btnSkipMission = document.getElementById('btnSkipMission');
+
+    if (btnClearMission) {
+      btnClearMission.addEventListener('click', () => {
+        mission.playerSlices.clear();
+        playTone(250, 'sine', 0.08);
+        updatePlayerMissionUI();
+        drawMissionPlayer();
+      });
+    }
+
+    if (btnFillMission) {
+      btnFillMission.addEventListener('click', () => {
+        for (let i = 0; i < mission.playerDen; i++) mission.playerSlices.add(i);
+        playTone(550, 'triangle', 0.1);
+        updatePlayerMissionUI();
+        drawMissionPlayer();
+      });
+    }
+
+    if (btnVerifyMission) {
+      btnVerifyMission.addEventListener('click', () => {
+        const targetVal = mission.targetNum / mission.targetDen;
+        const playerVal = mission.playerSlices.size / mission.playerDen;
+
+        if (Math.abs(targetVal - playerVal) < 0.0001) {
+          soundSuccess();
+          if (missionFeedback) {
+            missionFeedback.textContent = `BERHASIL! ${mission.targetNum}/${mission.targetDen} = ${mission.playerSlices.size}/${mission.playerDen} (SENILAI)`;
+            missionFeedback.className = 'text-xs font-sci font-bold text-green-300 glow-green';
+          }
+          setTimeout(() => startMission(mission.level + 1), 1400);
+        } else {
+          soundError();
+          if (missionFeedback) {
+            missionFeedback.textContent = 'Daya Belum Seimbang! Hitung kembali.';
+            missionFeedback.className = 'text-xs font-sci font-bold text-rose-400';
+          }
+        }
+      });
+    }
+
+    if (btnSkipMission) {
+      btnSkipMission.addEventListener('click', () => {
+        playTone(320, 'sawtooth', 0.08);
+        startMission(mission.level + 1);
+      });
+    }
+
+    /* --------------------------------------------------
+       8. DUEL 2P (VS MODE SPLIT-SCREEN UNTUK LAYAR IFP)
+       -------------------------------------------------- */
+    const duel = {
+      score1: 0,
+      score2: 0,
+      targetNum: 1,
+      targetDen: 2,
+      p1Den: 6,
+      p2Den: 8,
+      p1Slices: new Set(),
+      p2Slices: new Set(),
+      isRoundActive: true
+    };
+
+    const duelP1Canvas = document.getElementById('duelP1Canvas');
+    const ctxDuelP1 = duelP1Canvas ? duelP1Canvas.getContext('2d') : null;
+    const duelP2Canvas = document.getElementById('duelP2Canvas');
+    const ctxDuelP2 = duelP2Canvas ? duelP2Canvas.getContext('2d') : null;
+
+    const p1FracDisplay = document.getElementById('p1FracDisplay');
+    const p2FracDisplay = document.getElementById('p2FracDisplay');
+    const p1Score = document.getElementById('p1Score');
+    const p2Score = document.getElementById('p2Score');
+    const duelTargetFrac = document.getElementById('duelTargetFrac');
+    const duelStatusBanner = document.getElementById('duelStatusBanner');
+
+    const btnP1Lock = document.getElementById('btnP1Lock');
+    const btnP2Lock = document.getElementById('btnP2Lock');
+    const btnP1Reset = document.getElementById('btnP1Reset');
+    const btnP2Reset = document.getElementById('btnP2Reset');
+    const btnNewRoundDuel = document.getElementById('btnNewRoundDuel');
+
+    const duelPresets = [
+      { tNum: 1, tDen: 2, d1: 6, d2: 8 },
+      { tNum: 2, tDen: 3, d1: 6, d2: 9 },
+      { tNum: 3, tDen: 4, d1: 8, d2: 12 },
+      { tNum: 2, tDen: 5, d1: 10, d2: 15 },
+      { tNum: 1, tDen: 3, d1: 6, d2: 12 },
+      { tNum: 3, tDen: 5, d1: 10, d2: 15 }
+    ];
+
+    function startNewDuelRound() {
+      duel.isRoundActive = true;
+      const q = duelPresets[Math.floor(Math.random() * duelPresets.length)];
+      duel.targetNum = q.tNum;
+      duel.targetDen = q.tDen;
+      duel.p1Den = q.d1;
+      duel.p2Den = q.d2;
+      duel.p1Slices.clear();
+      duel.p2Slices.clear();
+
+      if (duelTargetFrac) duelTargetFrac.textContent = `${q.tNum} / ${q.tDen}`;
+      if (duelStatusBanner) {
+        duelStatusBanner.textContent = 'BERLOMBA!';
+        duelStatusBanner.className = 'text-xs font-sci font-bold text-amber-300 mt-1 px-2 py-1 rounded bg-black/50 border border-amber-500/30';
+      }
+
+      updateDuelUI();
+      drawDuelPlayer(ctxDuelP1, duelP1Canvas, duel.p1Slices, duel.p1Den, 'cyan');
+      drawDuelPlayer(ctxDuelP2, duelP2Canvas, duel.p2Slices, duel.p2Den, 'magenta');
+      playTone(440, 'triangle', 0.15);
+    }
+
+    function updateDuelUI() {
+      if (p1FracDisplay) p1FracDisplay.textContent = `${duel.p1Slices.size} / ${duel.p1Den}`;
+      if (p2FracDisplay) p2FracDisplay.textContent = `${duel.p2Slices.size} / ${duel.p2Den}`;
+      if (p1Score) p1Score.textContent = `SKOR: ${duel.score1}`;
+      if (p2Score) p2Score.textContent = `SKOR: ${duel.score2}`;
+    }
+
+    function drawDuelPlayer(ctx, canvas, sliceSet, den, theme) {
+      if (!ctx || !canvas) return;
+      const w = canvas.width;
+      const h = canvas.height;
+      if (w <= 0 || h <= 0) return;
+
+      const cx = w / 2;
+      const cy = h / 2;
+      const radius = Math.max(15, Math.min(cx, cy) * 0.86);
+
+      ctx.clearRect(0, 0, w, h);
+      const isCyan = theme === 'cyan';
+      const mainColor = isCyan ? '#00f3ff' : '#bd00ff';
+      const deepColor = isCyan ? '#004466' : '#4d0066';
+
+      const sliceAngle = (Math.PI * 2) / den;
+      const startOffset = -Math.PI / 2;
+
+      for (let i = 0; i < den; i++) {
+        const sStart = startOffset + i * sliceAngle;
+        const sEnd = sStart + sliceAngle;
+        const isActive = sliceSet.has(i);
+
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.arc(cx, cy, radius, sStart, sEnd);
+        ctx.closePath();
+
+        if (isActive) {
+          const grad = ctx.createRadialGradient(cx, cy, Math.max(1, radius * 0.1), cx, cy, radius);
+          grad.addColorStop(0, '#ffffff');
+          grad.addColorStop(0.35, mainColor);
+          grad.addColorStop(1, deepColor);
+          ctx.fillStyle = grad;
+          ctx.shadowColor = mainColor;
+          ctx.shadowBlur = 12;
+          ctx.fill();
+          ctx.shadowBlur = 0;
+        } else {
+          ctx.fillStyle = isCyan ? 'rgba(4, 18, 38, 0.5)' : 'rgba(25, 4, 38, 0.5)';
+          ctx.fill();
+        }
+
+        ctx.strokeStyle = isActive ? '#ffffff' : (isCyan ? 'rgba(0, 243, 255, 0.35)' : 'rgba(189, 0, 255, 0.35)');
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+
+      ctx.beginPath();
+      ctx.arc(cx, cy, Math.max(12, radius * 0.18), 0, Math.PI * 2);
+      ctx.fillStyle = mainColor;
+      ctx.fill();
+    }
+
+    function handleDuelSliceTouch(e, isPlayer1) {
+      if (!duel.isRoundActive) return;
+      const canvas = isPlayer1 ? duelP1Canvas : duelP2Canvas;
+      const sliceSet = isPlayer1 ? duel.p1Slices : duel.p2Slices;
+      const den = isPlayer1 ? duel.p1Den : duel.p2Den;
+      const ctx = isPlayer1 ? ctxDuelP1 : ctxDuelP2;
+      const theme = isPlayer1 ? 'cyan' : 'magenta';
+
+      if (!canvas) return;
+      const rect = canvas.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+
+      const clientX = e.clientX || (e.touches && e.touches[0].clientX) || 0;
+      const clientY = e.clientY || (e.touches && e.touches[0].clientY) || 0;
+
+      const x = (clientX - rect.left) * scaleX;
+      const y = (clientY - rect.top) * scaleY;
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2;
+
+      const dx = x - cx;
+      const dy = y - cy;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      if (dist < 10 || dist > canvas.width * 0.48) return;
+
+      let angle = Math.atan2(dy, dx) + Math.PI / 2;
+      if (angle < 0) angle += Math.PI * 2;
+
+      const sliceAngle = (Math.PI * 2) / den;
+      const sliceIdx = Math.floor(angle / sliceAngle);
+
+      if (sliceSet.has(sliceIdx)) {
+        sliceSet.delete(sliceIdx);
+        playTone(isPlayer1 ? 300 : 350, 'sine', 0.05);
+      } else {
+        sliceSet.add(sliceIdx);
+        playTone(isPlayer1 ? 600 : 700, 'triangle', 0.07);
+      }
+
+      updateDuelUI();
+      drawDuelPlayer(ctx, canvas, sliceSet, den, theme);
+    }
+
+    if (duelP1Canvas) {
+      duelP1Canvas.addEventListener('click', (e) => handleDuelSliceTouch(e, true));
+      duelP1Canvas.addEventListener('touchstart', (e) => { e.preventDefault(); handleDuelSliceTouch(e, true); }, { passive: false });
+    }
+    if (duelP2Canvas) {
+      duelP2Canvas.addEventListener('click', (e) => handleDuelSliceTouch(e, false));
+      duelP2Canvas.addEventListener('touchstart', (e) => { e.preventDefault(); handleDuelSliceTouch(e, false); }, { passive: false });
+    }
+
+    function checkDuelPlayer(isPlayer1) {
+      if (!duel.isRoundActive) return;
+      const targetVal = duel.targetNum / duel.targetDen;
+      const sliceSet = isPlayer1 ? duel.p1Slices : duel.p2Slices;
+      const den = isPlayer1 ? duel.p1Den : duel.p2Den;
+      const playerVal = sliceSet.size / den;
+
+      if (Math.abs(targetVal - playerVal) < 0.0001) {
+        duel.isRoundActive = false;
+        soundSuccess();
+        if (isPlayer1) {
+          duel.score1++;
+          duelStatusBanner.textContent = 'PEMAIN 1 MENANG!';
+          duelStatusBanner.className = 'text-xs font-sci font-bold text-cyan-300 glow-cyan mt-1 px-2 py-1 rounded bg-cyan-950 border border-cyan-400';
+        } else {
+          duel.score2++;
+          duelStatusBanner.textContent = 'PEMAIN 2 MENANG!';
+          duelStatusBanner.className = 'text-xs font-sci font-bold text-violet-300 glow-violet mt-1 px-2 py-1 rounded bg-violet-950 border border-violet-400';
+        }
+        updateDuelUI();
+        setTimeout(startNewDuelRound, 2000);
+      } else {
+        soundError();
+        playTone(180, 'sawtooth', 0.15);
+      }
+    }
+
+    if (btnP1Lock) btnP1Lock.addEventListener('click', () => checkDuelPlayer(true));
+    if (btnP2Lock) btnP2Lock.addEventListener('click', () => checkDuelPlayer(false));
+
+    if (btnP1Reset) {
+      btnP1Reset.addEventListener('click', () => {
+        duel.p1Slices.clear();
+        updateDuelUI();
+        drawDuelPlayer(ctxDuelP1, duelP1Canvas, duel.p1Slices, duel.p1Den, 'cyan');
+      });
+    }
+
+    if (btnP2Reset) {
+      btnP2Reset.addEventListener('click', () => {
+        duel.p2Slices.clear();
+        updateDuelUI();
+        drawDuelPlayer(ctxDuelP2, duelP2Canvas, duel.p2Slices, duel.p2Den, 'magenta');
+      });
+    }
+
+    if (btnNewRoundDuel) btnNewRoundDuel.addEventListener('click', startNewDuelRound);
+
+    /* --------------------------------------------------
+       9. TAB NAVIGATION (LAB, MISI, DUEL)
+       -------------------------------------------------- */
+    const tabLab = document.getElementById('tabLab');
+    const tabMission = document.getElementById('tabMission');
+    const tabDuel = document.getElementById('tabDuel');
+    const panelLab = document.getElementById('panelLab');
+    const panelMission = document.getElementById('panelMission');
+    const panelDuel = document.getElementById('panelDuel');
+
+    function switchTab(activeBtn, showPanel) {
+      [tabLab, tabMission, tabDuel].forEach(b => { if (b) b.classList.remove('active'); });
+      [panelLab, panelMission, panelDuel].forEach(p => {
+        if (p) {
+          p.classList.add('hidden');
+          p.classList.remove('grid');
+        }
+      });
+
+      if (activeBtn) activeBtn.classList.add('active');
+      if (showPanel) {
+        showPanel.classList.remove('hidden');
+        showPanel.classList.add('grid');
+      }
+      playTone(480, 'sine', 0.08);
+      requestAnimationFrame(resizeAllCanvases);
+    }
+
+    if (tabLab) tabLab.addEventListener('click', () => switchTab(tabLab, panelLab));
+    if (tabMission) {
+      tabMission.addEventListener('click', () => {
+        switchTab(tabMission, panelMission);
+        startMission(mission.level);
+      });
+    }
+    if (tabDuel) {
+      tabDuel.addEventListener('click', () => {
+        switchTab(tabDuel, panelDuel);
+        startNewDuelRound();
+      });
+    }
+
+    /* --------------------------------------------------
+       10. SAFE RESIZE OBSERVER ENGINE
+       -------------------------------------------------- */
+    function resizeCanvasElement(c) {
+      if (!c || !c.parentElement) return;
+      const rect = c.parentElement.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      const w = Math.max(60, rect.width - 6);
+      const h = Math.max(60, rect.height - 6);
+      const size = Math.min(w, h);
+      c.width = Math.round(size * dpr);
+      c.height = Math.round(size * dpr);
+    }
+
+    function resizeAllCanvases() {
+      try {
+        resizeDrawCanvas();
+        [canvasA, canvasB, missionTargetCanvas, missionPlayerCanvas, duelP1Canvas, duelP2Canvas].forEach(resizeCanvasElement);
+        renderLab();
+        if (panelMission && !panelMission.classList.contains('hidden')) {
+          drawMissionTarget();
+          drawMissionPlayer();
+        }
+        if (panelDuel && !panelDuel.classList.contains('hidden')) {
+          drawDuelPlayer(ctxDuelP1, duelP1Canvas, duel.p1Slices, duel.p1Den, 'cyan');
+          drawDuelPlayer(ctxDuelP2, duelP2Canvas, duel.p2Slices, duel.p2Den, 'magenta');
+        }
+      } catch (err) {}
+    }
+
+    let resizeTimer = null;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        initStars();
+        requestAnimationFrame(resizeAllCanvases);
+      }, 50);
+    });
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initStars();
+      renderBg();
+      requestAnimationFrame(() => {
+        resizeAllCanvases();
+        startMission(1);
+      });
+    });
+  </script>
+</body>
+</html>
